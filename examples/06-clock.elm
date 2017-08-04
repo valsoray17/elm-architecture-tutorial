@@ -1,4 +1,5 @@
 import Html exposing (..)
+import Html.Events exposing (onClick)
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
 import Time exposing (Time, second)
@@ -18,12 +19,15 @@ main =
 -- MODEL
 
 
-type alias Model = Time
+type alias Model =
+  { time : Time
+  , paused : Bool
+  }
 
 
 init : (Model, Cmd Msg)
 init =
-  (0, Cmd.none)
+  (Model 0 False, Cmd.none)
 
 
 
@@ -32,14 +36,17 @@ init =
 
 type Msg
   = Tick Time
+  | Pause
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
     Tick newTime ->
-      (newTime, Cmd.none)
+      ( { model | time = newTime} , Cmd.none)
 
+    Pause ->
+      ( { model | paused = not model.paused }, Cmd.none)
 
 
 -- SUBSCRIPTIONS
@@ -47,7 +54,10 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  Time.every second Tick
+  if model.paused then
+    Sub.none
+  else
+    Time.every second Tick
 
 
 
@@ -56,19 +66,47 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-  let
-    angle =
-      turns (Time.inMinutes model)
+  div []
+    [ drawClock model
+    , button [ onClick Pause ] [ Html.text "Pause" ]
+    ]
 
+
+type alias HandStyle =
+  { length : Float
+  , strokeWidth : String
+  }
+
+
+drawClockHand : Float -> HandStyle -> Html Msg
+drawClockHand angle handStyle =
+  let
     handX =
-      toString (50 + 40 * cos angle)
+      toString (50 + handStyle.length * cos (angle - degrees 90))
 
     handY =
-      toString (50 + 40 * sin angle)
+      toString (50 + handStyle.length * sin (angle - degrees 90))
   in
-    div [] [ svg [ viewBox "0 0 100 100", width "300px" ]
+    line [ x1 "50", y1 "50"
+         , x2 handX, y2 handY
+         , stroke "#023963", strokeWidth handStyle.strokeWidth ] []
+
+
+drawClock : Model -> Html Msg
+drawClock model =
+  let
+    secondAngle =
+      degrees (toFloat (((floor (Time.inSeconds model.time)) % 60) * 6))
+
+    minuteAngle =
+      degrees (toFloat (((floor (Time.inMinutes model.time)) % 60) * 6))
+
+    hourAngle =
+      degrees (toFloat (((floor (Time.inHours model.time)) % 12) * 30))
+  in
+    svg [ viewBox "0 0 100 100", width "300px" ]
               [ circle [ cx "50", cy "50", r "45", fill "#0B79CE" ] []
-              , line [ x1 "50", y1 "50", x2 handX, y2 handY, stroke "#023963" ] []
+              , drawClockHand secondAngle (HandStyle 40 "0.5px")
+              , drawClockHand minuteAngle (HandStyle 30 "1px")
+              , drawClockHand hourAngle (HandStyle 20 "1.5px")
               ]
-      , Html.text (toString <| Time.inMinutes model)
-      ]
