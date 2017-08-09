@@ -96,13 +96,13 @@ drawClock : Model -> Html Msg
 drawClock model =
   let
     secondAngle =
-      degrees (toFloat (((floor (Time.inSeconds model.time)) % 60) * 6))
+      degrees <| toFloat <| floor (Time.inSeconds model.time) % 60 * 6
 
     minuteAngle =
-      degrees (toFloat (((floor (Time.inMinutes model.time)) % 60) * 6))
+      degrees <| toFloat <| floor (Time.inMinutes model.time) % 60 * 6
 
     hourAngle =
-      degrees (toFloat (((floor (Time.inHours model.time)) % 12) * 30))
+      degrees <| toFloat <| floor (Time.inHours model.time) % 12 * 30
   in
     svg [ viewBox "0 0 100 100", width "300px" ]
               [ circle [ cx "50", cy "50", r "45", fill "#0B79CE" ] []
